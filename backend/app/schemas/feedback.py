@@ -26,3 +26,7 @@ class FeedbackUploadStats(BaseModel):
     total_inserted: int
     ignored_short: int
     message: str
+
+class AppStoreScrapeRequest(BaseModel):
+    app_id: str
+    country: str = "us"

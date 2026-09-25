@@ -10,6 +10,8 @@ import {
   Frown,
   Flame,
   CheckCircle2,
+  Globe,
+  FileDown,
 } from 'lucide-react';
 import { projectsApi } from '../api/projects';
 import { analysisApi } from '../api/analysis';
@@ -20,6 +22,8 @@ import { SentimentBar } from '../components/dashboard/SentimentBar';
 import { ClusterCard } from '../components/dashboard/ClusterCard';
 import { FeedbackList } from '../components/dashboard/FeedbackList';
 import { CsvDropzone } from '../components/upload/CsvDropzone';
+import { AppStoreModal } from '../components/upload/AppStoreModal';
+import { ExportReportModal } from '../components/dashboard/ExportReportModal';
 
 export const ProjectDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +37,8 @@ export const ProjectDetailsPage: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<UploadStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isAppStoreOpen, setIsAppStoreOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   const loadData = async () => {
     if (!id) return;
@@ -89,19 +95,21 @@ export const ProjectDetailsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="p-12 text-center text-slate-400">
-        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p>Loyiha yuklanmoqda...</p>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs text-slate-500 font-medium">Loyiha tahlillari yuklanmoqda...</span>
+        </div>
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-bold text-slate-800">Loyiha topilmadi</h3>
-        <Link to="/" className="text-emerald-600 underline text-sm mt-2 inline-block">
-          Bosh sahifaga qaytish
+      <div className="text-center py-16">
+        <h2 className="text-lg font-bold text-slate-900">Loyiha topilmadi</h2>
+        <Link to="/dashboard" className="text-xs text-emerald-600 hover:underline mt-2 inline-block">
+          Barcha loyihalarga qaytish
         </Link>
       </div>
     );
@@ -109,30 +117,51 @@ export const ProjectDetailsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+      {/* Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Link
-              to="/"
-              className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> Barcha loyihalar
+          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <Link to="/dashboard" className="hover:text-slate-900 flex items-center gap-1 transition-colors">
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Barcha loyihalar</span>
             </Link>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{project.name}</h1>
           <p className="text-xs text-slate-500 mt-1">{project.description || 'Tavsif yo\'q'}</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsAppStoreOpen(true)}
+            className="gap-1.5 text-xs text-slate-700 hover:text-emerald-700"
+          >
+            <Globe className="w-3.5 h-3.5 text-emerald-600" />
+            <span>App Store'dan</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
             onClick={() => setActiveTab('upload')}
-            className="gap-2 text-xs"
+            className="gap-1.5 text-xs"
           >
             <Upload className="w-3.5 h-3.5" />
             <span>CSV Yuklash</span>
           </Button>
+
+          {summary && summary.clusters.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsExportOpen(true)}
+              className="gap-1.5 text-xs text-slate-700 hover:text-blue-700"
+            >
+              <FileDown className="w-3.5 h-3.5 text-blue-600" />
+              <span>Hisobot</span>
+            </Button>
+          )}
 
           <Button
             variant="primary"
@@ -154,6 +183,7 @@ export const ProjectDetailsPage: React.FC = () => {
         </div>
       )}
 
+      {/* Tabs */}
       <div className="flex border-b border-slate-200 gap-6">
         <button
           onClick={() => setActiveTab('roadmap')}
@@ -192,6 +222,7 @@ export const ProjectDetailsPage: React.FC = () => {
         </button>
       </div>
 
+      {/* Tab Contents */}
       {activeTab === 'roadmap' && (
         <div className="space-y-6">
           {summary && (
@@ -233,55 +264,34 @@ export const ProjectDetailsPage: React.FC = () => {
             />
           )}
 
-          {summary && summary.clusters.length > 0 ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">
-                    Eng Muhim Muammolar Klasteri (Roadmap Priority)
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Foydalanuvchilar e'tirozlari bo'yicha guruhlangan va Jira/Linear topshiriqlari tayyorlangan.
-                  </p>
-                </div>
-              </div>
+          <div>
+            <div className="mb-4">
+              <h2 className="text-base font-bold text-slate-900">Eng Muhim Muammolar Klasteri (Roadmap Priority)</h2>
+              <p className="text-xs text-slate-500">
+                Foydalanuvchilar e'tirozlari bo'yicha guruhlangan va Jira/Linear topshiriqlari tayyorlangan.
+              </p>
+            </div>
 
+            {summary && summary.clusters.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
                 {summary.clusters.map((cluster, idx) => (
                   <ClusterCard key={cluster.id} cluster={cluster} rank={idx + 1} />
                 ))}
               </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-7 h-7" />
-              </div>
-              <h4 className="text-base font-bold text-slate-900 mb-1">
-                Tahlil natijalari hali shakllanmagan
-              </h4>
-              <p className="text-xs text-slate-500 max-w-md mx-auto mb-6">
-                {feedbacks.length > 0
-                  ? 'Bazadagi sharhlarni semantik klasterlash va Jira tasklarini hosil qilish uchun tugmani bosing.'
-                  : 'Avval CSV formatida foydalanuvchilar fikr-mulohazalarini yuklang.'}
-              </p>
-              {feedbacks.length > 0 ? (
-                <Button
-                  onClick={handleTriggerAnalysis}
-                  isLoading={isAnalyzing}
-                  className="gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>AI Tahlilni Boshlash</span>
-                </Button>
-              ) : (
-                <Button onClick={() => setActiveTab('upload')} className="gap-2">
-                  <Upload className="w-4 h-4" />
+            ) : (
+              <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
+                <Sparkles className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+                <h3 className="text-sm font-bold text-slate-900">Tahlil natijalari hali shakllanmagan</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
+                  Avval CSV formatida foydalanuvchilar fikr-mulohazalarini yuklang.
+                </p>
+                <Button size="sm" variant="primary" onClick={() => setActiveTab('upload')} className="gap-2 text-xs">
+                  <Upload className="w-3.5 h-3.5" />
                   <span>CSV Yuklash</span>
                 </Button>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -290,11 +300,11 @@ export const ProjectDetailsPage: React.FC = () => {
       )}
 
       {activeTab === 'upload' && (
-        <div className="max-w-2xl mx-auto space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 className="text-base font-bold text-slate-900 mb-1">CSV formatidagi sharhlarni yuklash</h3>
+        <div className="max-w-2xl mx-auto py-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <h2 className="text-base font-bold text-slate-900 mb-1">Mijozlar Fikrlarini Yuklash</h2>
             <p className="text-xs text-slate-500 mb-6">
-              Fayl ichidagi sharhlar avtomatik filtrlanadi (15 belgidan qisqalari chiqarib tashlanadi) va vektor bazaga saqlanadi.
+              Mijozlar sharhlarini CSV formatida yuklang. Tizim avtomatik ravishda reyting va matnni aniqlaydi.
             </p>
 
             <CsvDropzone onUpload={handleUploadCsv} isLoading={isUploading} />
@@ -325,6 +335,29 @@ export const ProjectDetailsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* App Store Modal */}
+      {id && (
+        <AppStoreModal
+          isOpen={isAppStoreOpen}
+          onClose={() => setIsAppStoreOpen(false)}
+          projectId={id}
+          onSuccess={async (stats: UploadStats) => {
+            setUploadSuccess(stats);
+            await loadData();
+            setActiveTab('feedbacks');
+          }}
+        />
+      )}
+
+      {/* Export Report Modal */}
+      <ExportReportModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        project={project}
+        summary={summary}
+        feedbacks={feedbacks}
+      />
     </div>
   );
 };

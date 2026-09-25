@@ -7,9 +7,10 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.project import Project
 from app.models.feedback import Feedback
-from app.schemas.feedback import FeedbackResponse, FeedbackUploadStats
+from app.schemas.feedback import FeedbackResponse, FeedbackUploadStats, AppStoreScrapeRequest
 from app.api.deps import get_current_user
 from app.services.parsers.csv_parser import parse_feedback_csv
+from app.services.parsers.store_scraper import fetch_app_store_reviews
 from app.services.embedding import get_embeddings
 
 router = APIRouter()
@@ -66,6 +67,56 @@ async def upload_csv_feedbacks(
         total_inserted=len(db_items),
         ignored_short=ignored_short,
         message=f"Successfully imported {len(db_items)} feedbacks. {ignored_short} short/invalid items were filtered out."
+    )
+
+@router.post("/{project_id}/feedbacks/scrape-app-store", response_model=FeedbackUploadStats)
+async def scrape_app_store_feedbacks(
+    project_id: uuid.UUID,
+    payload: AppStoreScrapeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    project = db.query(Project).filter(Project.id == project_id, Project.user_id == current_user.id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        valid_items, total_parsed, ignored_short = await fetch_app_store_reviews(payload.app_id, payload.country)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to scrape App Store: {str(e)}")
+
+    if not valid_items:
+        return FeedbackUploadStats(
+            total_parsed=total_parsed,
+            total_inserted=0,
+            ignored_short=ignored_short,
+            message="No valid feedbacks retrieved from App Store."
+        )
+
+    texts_to_embed = [item["content"] for item in valid_items]
+    embeddings = await get_embeddings(texts_to_embed)
+
+    db_items = []
+    for idx, item in enumerate(valid_items):
+        db_feedback = Feedback(
+            project_id=project_id,
+            source=item["source"],
+            author_name=item["author_name"],
+            content=item["content"],
+            rating=item["rating"],
+            sentiment=item["sentiment"],
+            embedding=embeddings[idx] if idx < len(embeddings) else None
+        )
+        db_items.append(db_feedback)
+
+    db.add_all(db_items)
+    db.commit()
+
+    return FeedbackUploadStats(
+        total_parsed=total_parsed,
+        total_inserted=len(db_items),
+        ignored_short=ignored_short,
+        message=f"Successfully fetched {len(db_items)} App Store reviews for App ID {payload.app_id}."
     )
 
 @router.get("/{project_id}/feedbacks", response_model=List[FeedbackResponse])

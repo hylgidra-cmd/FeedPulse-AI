@@ -34,6 +34,14 @@ export const projectsApi = {
     return res.data;
   },
 
+  scrapeAppStore: async (projectId: string, appId: string, country: string = 'us'): Promise<UploadStats> => {
+    const res = await apiClient.post<UploadStats>(
+      `/projects/${projectId}/feedbacks/scrape-app-store`,
+      { app_id: appId, country }
+    );
+    return res.data;
+  },
+
   getFeedbacks: async (projectId: string, sentiment?: string): Promise<Feedback[]> => {
     const params = sentiment ? { sentiment } : {};
     const res = await apiClient.get<Feedback[]>(`/projects/${projectId}/feedbacks`, { params });

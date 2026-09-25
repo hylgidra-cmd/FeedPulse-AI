@@ -72,25 +72,22 @@ async def summarize_cluster(feedbacks: List[Dict[str, Any]]) -> Dict[str, Any]:
     user_prompt = f"Klasterga tegishli foydalanuvchi sharhlari:\n{reviews_text}\n\nIltimos, yuqoridagi qat'iy JSON formatida javob bering."
 
     if settings.GROQ_API_KEY and settings.GROQ_API_KEY.startswith("gsk_"):
-        from groq import AsyncGroq
-        client = AsyncGroq(api_key=settings.GROQ_API_KEY)
-        candidate_models = [settings.GROQ_MODEL, "openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
-        for mod in candidate_models:
-            try:
-                chat_completion = await client.chat.completions.create(
-                    messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    model=mod,
-                    temperature=0.2,
-                    response_format={"type": "json_object"}
-                )
-                raw_content = chat_completion.choices[0].message.content
-                return _clean_json_response(raw_content)
-            except Exception as e:
-                print(f"[Summarizer Warning] Groq model {mod} failed: {e}. Trying next...")
-                continue
+        try:
+            from groq import AsyncGroq
+            client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+            chat_completion = await client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt}
+                ],
+                model=settings.GROQ_MODEL,
+                temperature=0.2,
+                response_format={"type": "json_object"}
+            )
+            raw_content = chat_completion.choices[0].message.content
+            return _clean_json_response(raw_content)
+        except Exception as e:
+            print(f"[Summarizer Warning] Groq failed: {e}. Checking OpenAI fallback.")
 
     if settings.OPENAI_API_KEY and settings.OPENAI_API_KEY.startswith("sk-"):
         try:

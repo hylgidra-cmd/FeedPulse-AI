@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     EMBEDDING_PROVIDER: str = "openai"
     EMBEDDING_MODEL: str = "text-embedding-3-small"
-    GROQ_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [
