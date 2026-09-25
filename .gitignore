@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+backend/venv/
+venv/
+env/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite
+*.sqlite3
+*.db
+backend/feedpulse.db
+backend/test_feedpulse.db
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Logs & temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
