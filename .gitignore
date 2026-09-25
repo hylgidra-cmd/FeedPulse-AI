@@ -1,8 +1,10 @@
 # Dependencies
+**/node_modules/
 node_modules/
-backend/venv/
+**/venv/
 venv/
 env/
+**/.env
 .env
 
 # Python
@@ -16,6 +18,7 @@ backend/feedpulse.db
 backend/test_feedpulse.db
 
 # Build outputs
+**/dist/
 dist/
 build/
 *.egg-info/
