@@ -52,30 +52,6 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
         "user": user
     }
 
-@router.post("/demo-login", response_model=Token)
-def demo_login(db: Session = Depends(get_db)):
-    demo_email = "demo@feedpulse.ai"
-    user = db.query(User).filter(User.email == demo_email).first()
-    if not user:
-        user = User(
-            email=demo_email,
-            hashed_password=get_password_hash("demo12345"),
-            full_name="Madiyar (Demo)"
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        subject=str(user.id), expires_delta=access_token_expires
-    )
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": user
-    }
-
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user

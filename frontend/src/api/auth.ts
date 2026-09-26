@@ -7,11 +7,6 @@ export const authApi = {
     return res.data;
   },
 
-  demoLogin: async (): Promise<AuthResponse> => {
-    const res = await apiClient.post<AuthResponse>('/auth/demo-login');
-    return res.data;
-  },
-
   register: async (email: string, password: string, full_name?: string): Promise<User> => {
     const res = await apiClient.post<User>('/auth/register', { email, password, full_name });
     return res.data;
