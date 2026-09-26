@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { Download, AlertCircle } from 'lucide-react';
+import { Download, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { projectsApi } from '../../api/projects';
 import { UploadStats } from '../../types';
 
@@ -12,11 +12,22 @@ interface AppStoreModalProps {
   onSuccess: (stats: UploadStats) => void;
 }
 
-const PRESET_APPS = [
-  { name: 'Telegram', id: '686449807' },
-  { name: 'Spotify', id: '324684580' },
-  { name: 'Duolingo', id: '570060128' },
-  { name: 'WhatsApp', id: '310633997' },
+interface PresetApp {
+  name: string;
+  icon: string;
+  category: string;
+  id: string;
+}
+
+const PRESET_APPS: PresetApp[] = [
+  { name: 'Telegram', icon: '💬', category: 'Messenger', id: '686449807' },
+  { name: 'Spotify', icon: '🎵', category: 'Musiqa', id: '324684580' },
+  { name: 'WhatsApp', icon: '🟢', category: 'Messenger', id: '310633997' },
+  { name: 'ChatGPT', icon: '🤖', category: 'AI', id: '6448311069' },
+  { name: 'Instagram', icon: '📸', category: 'Ijtimoiy tarmoq', id: '389801252' },
+  { name: 'YouTube', icon: '▶️', category: 'Video', id: '544007664' },
+  { name: 'Netflix', icon: '🎬', category: 'Kino & Serial', id: '363590051' },
+  { name: 'Uber', icon: '🚗', category: 'Taksi xizmati', id: '368677368' },
 ];
 
 export const AppStoreModal: React.FC<AppStoreModalProps> = ({
@@ -26,13 +37,20 @@ export const AppStoreModal: React.FC<AppStoreModalProps> = ({
   onSuccess,
 }) => {
   const [appId, setAppId] = useState('');
+  const [selectedAppName, setSelectedAppName] = useState('');
   const [country, setCountry] = useState('us');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const selectApp = (app: PresetApp) => {
+    setAppId(app.id);
+    setSelectedAppName(`${app.icon} ${app.name}`);
+    setError(null);
+  };
+
   const handleFetch = async () => {
     if (!appId.trim()) {
-      setError('Iltimos, App Store ilova ID-sini kiriting.');
+      setError('Iltimos, yuqoridagi ilovalardan birini tanlang yoki App Store ID kiriting.');
       return;
     }
 
@@ -50,11 +68,44 @@ export const AppStoreModal: React.FC<AppStoreModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="App Store'dan Sharhlarni Yuklab Olish">
+    <Modal isOpen={isOpen} onClose={onClose} title="App Store'dan Real Sharhlarni Yuklab Olish">
       <div className="space-y-4">
-        <p className="text-xs text-slate-500">
-          Istalgan iOS ilovasining sharhlarini to'g'ridan-to'g'ri Apple App Store bazasidan avtomatik tortib oling.
-        </p>
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 mb-1">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <span>8 ta Mashhur Global Kompaniya (1-Click tanlash):</span>
+          </div>
+          <p className="text-[11px] text-slate-500 mb-2.5">
+            Har bir ilova bo'yicha Apple App Store rasmiy bazasidan eng so'nggi 50 ta real foydalanuvchi sharhi avtomatik tortib olinadi.
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {PRESET_APPS.map((app) => {
+              const isSelected = appId === app.id;
+              return (
+                <button
+                  key={app.id}
+                  type="button"
+                  onClick={() => selectApp(app)}
+                  className={`p-2 rounded-lg text-left border transition-all flex flex-col justify-between ${
+                    isSelected
+                      ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20 shadow-sm'
+                      : 'bg-white border-slate-200 hover:border-emerald-300 hover:bg-slate-50/80'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-base">{app.icon}</span>
+                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                  </div>
+                  <div className="mt-1.5">
+                    <p className="text-xs font-semibold text-slate-800 leading-tight">{app.name}</p>
+                    <span className="text-[10px] text-slate-600 font-medium">{app.category}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {error && (
           <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs flex items-center gap-2">
@@ -63,56 +114,42 @@ export const AppStoreModal: React.FC<AppStoreModalProps> = ({
           </div>
         )}
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Mashhur Ilovalar (1-Click tanlash):
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {PRESET_APPS.map((app) => (
-              <button
-                key={app.id}
-                type="button"
-                onClick={() => setAppId(app.id)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                  appId === app.id
-                    ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                {app.name} ({app.id})
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className="grid grid-cols-3 gap-3">
           <div className="col-span-2">
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Apple App Store ID:
+              Tanlangan Apple App Store ID:
             </label>
             <input
               type="text"
               placeholder="Masalan: 686449807"
               value={appId}
-              onChange={(e) => setAppId(e.target.value)}
+              onChange={(e) => {
+                setAppId(e.target.value);
+                setSelectedAppName('');
+              }}
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
+            {selectedAppName && (
+              <span className="text-[11px] text-emerald-600 font-medium mt-1 inline-block">
+                Tanlandi: {selectedAppName}
+              </span>
+            )}
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Hudud (Country):
+              Birlamchi Hudud:
             </label>
             <select
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
             >
-              <option value="us">AQSH (us)</option>
-              <option value="gb">Buyuk Britaniya (gb)</option>
-              <option value="ru">Rossiya (ru)</option>
-              <option value="de">Germaniya (de)</option>
-              <option value="uz">O'zbekiston (uz)</option>
+              <option value="us">Global (AQSH)</option>
+              <option value="gb">Buyuk Britaniya</option>
+              <option value="ca">Kanada</option>
+              <option value="de">Germaniya</option>
+              <option value="uz">O'zbekiston</option>
             </select>
           </div>
         </div>
@@ -127,7 +164,7 @@ export const AppStoreModal: React.FC<AppStoreModalProps> = ({
             className="gap-2 text-xs"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Sharhlarni Tortib Olish</span>
+            <span>{selectedAppName ? `${selectedAppName} Sharhlarini Olish` : 'Sharhlarni Tortib Olish'}</span>
           </Button>
         </div>
       </div>
