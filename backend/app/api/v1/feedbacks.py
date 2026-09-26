@@ -7,6 +7,7 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.project import Project
 from app.models.feedback import Feedback
+from app.models.cluster import IssueCluster
 from app.schemas.feedback import FeedbackResponse, FeedbackUploadStats, AppStoreScrapeRequest
 from app.api.deps import get_current_user
 from app.services.parsers.csv_parser import parse_feedback_csv
@@ -80,6 +81,14 @@ async def scrape_app_store_feedbacks(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    if getattr(payload, "replace_existing", False):
+        clusters = db.query(IssueCluster).filter(IssueCluster.project_id == project_id).all()
+        for c in clusters:
+            c.feedbacks.clear()
+            db.delete(c)
+        db.query(Feedback).filter(Feedback.project_id == project_id).delete(synchronize_session=False)
+        db.commit()
+
     try:
         valid_items, total_parsed, ignored_short = await fetch_app_store_reviews(payload.app_id, payload.country)
     except Exception as e:
@@ -118,6 +127,29 @@ async def scrape_app_store_feedbacks(
         ignored_short=ignored_short,
         message=f"Successfully fetched {len(db_items)} App Store reviews for App ID {payload.app_id}."
     )
+
+@router.delete("/{project_id}/feedbacks/clear")
+def clear_feedbacks(
+    project_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    project = db.query(Project).filter(Project.id == project_id, Project.user_id == current_user.id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    clusters = db.query(IssueCluster).filter(IssueCluster.project_id == project_id).all()
+    for c in clusters:
+        c.feedbacks.clear()
+        db.delete(c)
+
+    deleted_count = db.query(Feedback).filter(Feedback.project_id == project_id).delete(synchronize_session=False)
+    db.commit()
+
+    return {
+        "message": f"{deleted_count} ta sharh va tahlillar muvaffaqiyatli tozalandi.",
+        "deleted_count": deleted_count
+    }
 
 @router.get("/{project_id}/feedbacks", response_model=List[FeedbackResponse])
 def get_feedbacks(

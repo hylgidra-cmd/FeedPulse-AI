@@ -80,11 +80,6 @@ export const projectsApi = {
     return res.data;
   },
 
-  aiCrawl: async (projectId: string): Promise<Project> => {
-    const res = await apiClient.post<Project>(`/projects/${projectId}/ai-crawl`);
-    return res.data;
-  },
-
   getFeedbacks: async (projectId: string, sentiment?: string): Promise<Feedback[]> => {
     const params = sentiment ? { sentiment } : {};
     const res = await apiClient.get<Feedback[]>(`/projects/${projectId}/feedbacks`, { params });
