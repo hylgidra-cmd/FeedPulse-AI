@@ -46,6 +46,22 @@ export const ProjectDetailsPage: React.FC = () => {
   const [isAppStoreOpen, setIsAppStoreOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isApiModalOpen, setIsApiModalOpen] = useState(false);
+  const [isCrawling, setIsCrawling] = useState(false);
+
+  const handleAiCrawl = async () => {
+    if (!id) return;
+    setIsCrawling(true);
+    setError(null);
+    try {
+      await projectsApi.aiCrawl(id);
+      await loadData();
+      setActiveTab('roadmap');
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || 'Saytni AI orqali tahlil qilishda xatolik yuz berdi.');
+    } finally {
+      setIsCrawling(false);
+    }
+  };
 
   const loadData = async () => {
     if (!id) return;
@@ -211,6 +227,18 @@ export const ProjectDetailsPage: React.FC = () => {
           >
             <Key className="w-3.5 h-3.5 text-amber-500" />
             <span>API & Webhook</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAiCrawl}
+            isLoading={isCrawling}
+            className="gap-1.5 text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border-emerald-300 font-semibold"
+            title="Ushbu saytga API bermasdan, Grok AI orqali real sharhlarni yig'ish va tahlil qilish"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <span>⚡ Grok AI: Saytni Tahlil Qilish</span>
           </Button>
 
           <Button
@@ -444,25 +472,37 @@ export const ProjectDetailsPage: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
-                <Sparkles className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-                <h3 className="text-sm font-bold text-slate-900">Tahlil natijalari hali shakllanmagan</h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
-                  Avval CSV formatida foydalanuvchilar fikr-mulohazalarini yuklang yoki App Store'dan torting.
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-10 text-center shadow-xs">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 border border-emerald-100">
+                  <Sparkles className="w-7 h-7" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900">Tahlil natijalari hali shakllanmagan</h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-5 leading-relaxed">
+                  Ushbu saytga (<strong>{project.website_url || project.name}</strong>) API kalit berish shart emas! Grok AI yordamida o'quvchilar fikrlari va shikoyatlarini 1-bosishda tahlil qiling.
                 </p>
-                <div className="flex justify-center gap-2">
+                <div className="flex flex-wrap justify-center gap-2.5">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={handleAiCrawl}
+                    isLoading={isCrawling}
+                    className="gap-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
+                    <span>⚡ Grok AI Bilan Saytni Tahlil Qilish</span>
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => setIsAppStoreOpen(true)}
                     className="gap-2 text-xs"
                   >
-                    <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                    <Globe className="w-3.5 h-3.5 text-slate-600" />
                     <span>App Store</span>
                   </Button>
                   <Button
                     size="sm"
-                    variant="primary"
+                    variant="outline"
                     onClick={() => setActiveTab('upload')}
                     className="gap-2 text-xs"
                   >

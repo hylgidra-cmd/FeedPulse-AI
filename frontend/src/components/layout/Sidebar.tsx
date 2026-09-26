@@ -69,16 +69,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNewProjectClick }) => {
           </NavLink>
         </nav>
 
-        {/* 1-Click Data Life Quick-Start */}
+        {/* 1-Click Data Life Demo Quick-Start */}
         <div className="bg-gradient-to-br from-emerald-50 to-teal-50/60 p-3 rounded-2xl border border-emerald-200/80">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-emerald-600" />
-              DATA LIFE IT Academy
+              Tezkor Namuna
             </span>
           </div>
           <p className="text-[11px] text-slate-600 leading-snug mb-2.5">
-            <strong>DATA LIFE</strong> loyihasini 1-bosishda tayyor kurslar va real sharhlar bilan oching.
+            <strong>DATA LIFE IT Academy</strong> loyihasini 1-bosishda tayyor kurslar va real sharhlar bilan oching.
           </p>
           <button
             type="button"

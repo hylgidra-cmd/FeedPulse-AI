@@ -20,17 +20,6 @@ import { Project, WebsiteInspectResponse } from '../types';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 
-const PRESET_APPS = [
-  { name: 'Telegram', icon: '💬', category: 'Messenger', id: '686449807' },
-  { name: 'Spotify', icon: '🎵', category: 'Musiqa', id: '324684580' },
-  { name: 'WhatsApp', icon: '🟢', category: 'Messenger', id: '310633997' },
-  { name: 'ChatGPT', icon: '🤖', category: 'AI', id: '6448311069' },
-  { name: 'Instagram', icon: '📸', category: 'Ijtimoiy tarmoq', id: '389801252' },
-  { name: 'YouTube', icon: '▶️', category: 'Video', id: '544007664' },
-  { name: 'Netflix', icon: '🎬', category: 'Kino & Serial', id: '363590051' },
-  { name: 'Uber', icon: '🚗', category: 'Taksi xizmati', id: '368677368' },
-];
-
 export const DashboardPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +29,6 @@ export const DashboardPage: React.FC = () => {
   const [newProjectPlatform, setNewProjectPlatform] = useState('general');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const [quickSeedingApp, setQuickSeedingApp] = useState<string | null>(null);
 
   // Live Website Inspector State
   const [isInspecting, setIsInspecting] = useState(false);
@@ -63,32 +51,6 @@ export const DashboardPage: React.FC = () => {
   useEffect(() => {
     fetchProjects();
   }, []);
-
-  const handleQuickAppSeed = async (app: typeof PRESET_APPS[0]) => {
-    // Check if project already exists
-    const existing = projects.find((p) =>
-      p.name.toLowerCase().includes(app.name.toLowerCase())
-    );
-    if (existing) {
-      navigate(`/projects/${existing.id}`);
-      return;
-    }
-
-    setQuickSeedingApp(app.name);
-    try {
-      const created = await projectsApi.create(
-        `${app.icon} ${app.name}`,
-        `${app.name} (${app.category}) ilovasi bo'yicha mijozlar sharhlari va muammolari tahlili.`,
-        'ios'
-      );
-      await projectsApi.scrapeAppStore(created.id, app.id, 'us');
-      navigate(`/projects/${created.id}`);
-    } catch (err) {
-      console.error('Failed to quick seed app', err);
-    } finally {
-      setQuickSeedingApp(null);
-    }
-  };
 
   const handleInspectUrl = async () => {
     if (!websiteUrl.trim()) {
@@ -183,38 +145,6 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 8 Popular Global Apps Quick Launch Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
-          <div>
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-emerald-600" />
-              8 ta Mashhur Global Ilova (1-bosishda 50 ta real sharh bilan ochish):
-            </h3>
-            <p className="text-[11px] text-slate-500">
-              Apple App Store rasmiy bazasidan eng so'nggi 50 ta haqiqiy mijoz sharhini yuklab, sun'iy intellekt orqali klasterlaydi.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2">
-          {PRESET_APPS.map((app) => (
-            <button
-              key={app.id}
-              onClick={() => handleQuickAppSeed(app)}
-              disabled={quickSeedingApp !== null}
-              className="p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 text-center transition-all flex flex-col items-center justify-center gap-1 group bg-slate-50/50 hover:shadow-xs disabled:opacity-50"
-            >
-              <span className="text-xl group-hover:scale-110 transition-transform">{app.icon}</span>
-              <span className="text-xs font-bold text-slate-800 line-clamp-1">{app.name}</span>
-              <span className="text-[9px] text-emerald-700 font-semibold">
-                {quickSeedingApp === app.name ? 'Yuklanmoqda...' : '50 ta sharh'}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
@@ -228,7 +158,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <h3 className="text-lg font-bold text-slate-900 mb-1">Loyihalar mavjud emas</h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto mb-6">
-            Birinchi mahsulotingizni qo'shing yoki tayyor <strong>DATA LIFE IT Academy</strong> loyihasini 1-bosishda oching.
+            Birinchi mahsulotingizni qo'shing yoki tayyor <strong>DATA LIFE IT Academy</strong> namunaviy loyihasini 1-bosishda oching.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Button
@@ -237,7 +167,7 @@ export const DashboardPage: React.FC = () => {
               className="gap-2 text-xs border-emerald-300 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100"
             >
               <Sparkles className="w-4 h-4 text-emerald-600" />
-              <span>⚡ DATA LIFE IT Academy</span>
+              <span>⚡ DATA LIFE (Tezkor Namuna)</span>
             </Button>
             <Button onClick={() => setIsModalOpen(true)} className="gap-2 text-xs">
               <Plus className="w-4 h-4" />
