@@ -30,3 +30,5 @@ class FeedbackUploadStats(BaseModel):
 class AppStoreScrapeRequest(BaseModel):
     app_id: str
     country: str = "us"
+    app_name: Optional[str] = None
+    replace_existing: bool = True

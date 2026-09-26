@@ -34,10 +34,23 @@ export const projectsApi = {
     return res.data;
   },
 
-  scrapeAppStore: async (projectId: string, appId: string, country: string = 'us'): Promise<UploadStats> => {
+  scrapeAppStore: async (
+    projectId: string,
+    appId: string,
+    country: string = 'us',
+    appName?: string,
+    replaceExisting: boolean = true
+  ): Promise<UploadStats> => {
     const res = await apiClient.post<UploadStats>(
       `/projects/${projectId}/feedbacks/scrape-app-store`,
-      { app_id: appId, country }
+      { app_id: appId, country, app_name: appName, replace_existing: replaceExisting }
+    );
+    return res.data;
+  },
+
+  clearFeedbacks: async (projectId: string): Promise<{ message: string; deleted_count: number }> => {
+    const res = await apiClient.delete<{ message: string; deleted_count: number }>(
+      `/projects/${projectId}/feedbacks/clear`
     );
     return res.data;
   },

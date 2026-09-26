@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Feedback } from '../../types';
 import { Badge } from '../ui/Badge';
-import { Search, Star, Filter, MessageSquare, CheckCircle } from 'lucide-react';
+import { Search, Star, MessageSquare, Smartphone } from 'lucide-react';
 
 interface FeedbackListProps {
   feedbacks: Feedback[];
@@ -18,6 +18,7 @@ export const FeedbackList: React.FC<FeedbackListProps> = ({
 }) => {
   const [filter, setFilter] = useState<'all' | 'negative' | 'neutral' | 'positive'>(initialFilter);
   const [ratingFilter, setRatingFilter] = useState<number | 'all'>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -31,13 +32,26 @@ export const FeedbackList: React.FC<FeedbackListProps> = ({
     }
   };
 
+  const availableSources = Array.from(new Set(feedbacks.map((f) => f.source).filter(Boolean)));
+
+  const formatSourceLabel = (src: string) => {
+    if (!src) return 'Noma\'lum';
+    if (src.startsWith('app_store:')) {
+      return `🍎 ${src.replace('app_store:', '')}`;
+    }
+    if (src === 'app_store') return '🍎 App Store';
+    if (src === 'csv') return '📄 CSV Fayl';
+    return src;
+  };
+
   const filteredFeedbacks = feedbacks.filter((fb) => {
     const matchesFilter = filter === 'all' || fb.sentiment === filter;
     const matchesRating = ratingFilter === 'all' || fb.rating === ratingFilter;
+    const matchesSource = sourceFilter === 'all' || fb.source === sourceFilter;
     const matchesSearch =
       fb.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (fb.author_name && fb.author_name.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesFilter && matchesRating && matchesSearch;
+    return matchesFilter && matchesRating && matchesSource && matchesSearch;
   });
 
   return (
@@ -90,6 +104,25 @@ export const FeedbackList: React.FC<FeedbackListProps> = ({
             ))}
           </div>
 
+          {/* App / Source Filter (if multiple) */}
+          {availableSources.length > 1 && (
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-2.5 py-1 rounded-xl text-xs">
+              <Smartphone className="w-3.5 h-3.5 text-slate-500" />
+              <select
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value)}
+                className="bg-transparent text-xs font-medium text-slate-700 focus:outline-none cursor-pointer"
+              >
+                <option value="all">Barcha ilovalar</option>
+                {availableSources.map((src) => (
+                  <option key={src} value={src}>
+                    {formatSourceLabel(src)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Rating Dropdown */}
           <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-2.5 py-1 rounded-xl text-xs">
             <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
@@ -118,9 +151,14 @@ export const FeedbackList: React.FC<FeedbackListProps> = ({
           <strong className="text-slate-800 font-bold">{filteredFeedbacks.length}</strong> ta sharh (umumiy{' '}
           {feedbacks.length} tadan)
         </span>
-        {filter !== 'all' && (
+        {(filter !== 'all' || ratingFilter !== 'all' || sourceFilter !== 'all' || searchTerm) && (
           <button
-            onClick={() => handleFilterClick('all')}
+            onClick={() => {
+              handleFilterClick('all');
+              setRatingFilter('all');
+              setSourceFilter('all');
+              setSearchTerm('');
+            }}
             className="text-emerald-600 hover:underline font-medium text-[11px]"
           >
             Filtrni tozalash
@@ -152,8 +190,8 @@ export const FeedbackList: React.FC<FeedbackListProps> = ({
                   <span className="font-semibold text-slate-800 text-xs">
                     {fb.author_name || 'App Store Foydalanuvchisi'}
                   </span>
-                  <span className="text-[10px] text-slate-400 px-1.5 py-0.5 bg-slate-100 rounded">
-                    {fb.source === 'app_store' ? '🍎 App Store' : '📄 CSV'}
+                  <span className="text-[10px] text-slate-500 font-medium px-2 py-0.5 bg-slate-100 rounded-md">
+                    {formatSourceLabel(fb.source)}
                   </span>
                 </div>
 

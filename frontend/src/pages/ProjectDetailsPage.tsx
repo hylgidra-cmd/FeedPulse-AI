@@ -12,9 +12,7 @@ import {
   CheckCircle2,
   Globe,
   FileDown,
-  CheckCircle,
-  Clock,
-  Layers,
+  Trash2,
 } from 'lucide-react';
 import { projectsApi } from '../api/projects';
 import { analysisApi } from '../api/analysis';
@@ -95,6 +93,21 @@ export const ProjectDetailsPage: React.FC = () => {
       throw err;
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleClearFeedbacks = async () => {
+    if (!id) return;
+    if (!window.confirm("Barcha sharhlar va AI tahlillarni butunlay tozalamoqchimisiz?")) return;
+    setIsLoading(true);
+    try {
+      await projectsApi.clearFeedbacks(id);
+      setUploadSuccess(null);
+      await loadData();
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || "Tozalashda xatolik yuz berdi.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -200,6 +213,19 @@ export const ProjectDetailsPage: React.FC = () => {
             >
               <FileDown className="w-3.5 h-3.5 text-blue-600" />
               <span>Hisobot Eksporti</span>
+            </Button>
+          )}
+
+          {feedbacks.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearFeedbacks}
+              className="gap-1.5 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
+              title="Barcha sharhlarni tozalash"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Sharhlarni Tozalash</span>
             </Button>
           )}
 
