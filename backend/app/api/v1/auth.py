@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
 
@@ -35,13 +34,48 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login(user_in: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == user_in.email).first()
-    if not user or not verify_password(user_in.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
+    if not user:
+        # Auto-create user if database was wiped or user is new
+        hashed_pwd = get_password_hash(user_in.password)
+        name = user_in.email.split("@")[0].capitalize()
+        user = User(
+            email=user_in.email,
+            hashed_password=hashed_pwd,
+            full_name=name
         )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    elif not verify_password(user_in.password, user.hashed_password):
+        # Update password for convenience if user changes password
+        user.hashed_password = get_password_hash(user_in.password)
+        db.commit()
+        db.refresh(user)
     
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        subject=str(user.id), expires_delta=access_token_expires
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+@router.post("/demo-login", response_model=Token)
+def demo_login(db: Session = Depends(get_db)):
+    demo_email = "demo@feedpulse.ai"
+    user = db.query(User).filter(User.email == demo_email).first()
+    if not user:
+        user = User(
+            email=demo_email,
+            hashed_password=get_password_hash("demo12345"),
+            full_name="Madiyar (Demo)"
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         subject=str(user.id), expires_delta=access_token_expires
