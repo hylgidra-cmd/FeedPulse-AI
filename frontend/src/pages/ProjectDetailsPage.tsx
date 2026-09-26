@@ -12,6 +12,9 @@ import {
   CheckCircle2,
   Globe,
   FileDown,
+  CheckCircle,
+  Clock,
+  Layers,
 } from 'lucide-react';
 import { projectsApi } from '../api/projects';
 import { analysisApi } from '../api/analysis';
@@ -31,7 +34,9 @@ export const ProjectDetailsPage: React.FC = () => {
   const [summary, setSummary] = useState<ProjectAnalysisSummary | null>(null);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [activeTab, setActiveTab] = useState<'roadmap' | 'feedbacks' | 'upload'>('roadmap');
-  
+  const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'negative' | 'neutral' | 'positive'>('all');
+  const [clusterFilter, setClusterFilter] = useState<'all' | 'open' | 'resolved' | 'critical'>('all');
+
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -53,7 +58,7 @@ export const ProjectDetailsPage: React.FC = () => {
       setSummary(summaryData);
       setFeedbacks(fbsData);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Ma\'lumotlarni yuklashda xatolik');
+      setError(err?.response?.data?.detail || 'Ma\'lumotlarni yuklashda xatolik yuz berdi.');
     } finally {
       setIsLoading(false);
     }
@@ -93,6 +98,34 @@ export const ProjectDetailsPage: React.FC = () => {
     }
   };
 
+  const handleToggleResolve = async (clusterId: string) => {
+    if (!id) return;
+    try {
+      const updated = await analysisApi.toggleClusterResolved(id, clusterId);
+      setSummary((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          clusters: prev.clusters.map((c) => (c.id === clusterId ? updated : c)),
+        };
+      });
+    } catch (err: any) {
+      console.error('Failed to toggle resolve', err);
+    }
+  };
+
+  const handleCardClick = (target: 'all' | 'negative' | 'clusters' | 'positive') => {
+    if (target === 'clusters') {
+      setActiveTab('roadmap');
+      setTimeout(() => {
+        document.getElementById('clusters-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      setFeedbackFilter(target);
+      setActiveTab('feedbacks');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -115,6 +148,13 @@ export const ProjectDetailsPage: React.FC = () => {
     );
   }
 
+  const filteredClusters = summary?.clusters.filter((c) => {
+    if (clusterFilter === 'open') return !c.is_resolved;
+    if (clusterFilter === 'resolved') return c.is_resolved;
+    if (clusterFilter === 'critical') return c.severity === 'critical';
+    return true;
+  }) || [];
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -135,10 +175,10 @@ export const ProjectDetailsPage: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => setIsAppStoreOpen(true)}
-            className="gap-1.5 text-xs text-slate-700 hover:text-emerald-700"
+            className="gap-1.5 text-xs text-slate-700 hover:text-emerald-700 border-emerald-200 bg-emerald-50/50"
           >
             <Globe className="w-3.5 h-3.5 text-emerald-600" />
-            <span>App Store'dan</span>
+            <span>App Store'dan Real Sharhlar</span>
           </Button>
 
           <Button
@@ -159,7 +199,7 @@ export const ProjectDetailsPage: React.FC = () => {
               className="gap-1.5 text-xs text-slate-700 hover:text-blue-700"
             >
               <FileDown className="w-3.5 h-3.5 text-blue-600" />
-              <span>Hisobot</span>
+              <span>Hisobot Eksporti</span>
             </Button>
           )}
 
@@ -183,6 +223,54 @@ export const ProjectDetailsPage: React.FC = () => {
         </div>
       )}
 
+      {/* 4 Interactive KPI Metric Cards (Always Clickable) */}
+      {summary && (
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              title="Jami Sharhlar"
+              value={summary.total_feedbacks}
+              subtitle="Barcha fikr-mulohazalar"
+              icon={<MessageSquare className="w-5 h-5" />}
+              color="blue"
+              onClick={() => handleCardClick('all')}
+              isActive={activeTab === 'feedbacks' && feedbackFilter === 'all'}
+              actionHint="Barchasini ko'rish →"
+            />
+            <MetricCard
+              title="Salbiy Fikrlar"
+              value={summary.negative_feedbacks}
+              subtitle="Klasterlashga yo'naltirilgan"
+              icon={<Frown className="w-5 h-5" />}
+              color="rose"
+              onClick={() => handleCardClick('negative')}
+              isActive={activeTab === 'feedbacks' && feedbackFilter === 'negative'}
+              actionHint="Salbiylarni ko'rish →"
+            />
+            <MetricCard
+              title="Aniqlangan Muammolar"
+              value={summary.clusters.length}
+              subtitle="Groq Llama 3 tahlili"
+              icon={<Flame className="w-5 h-5" />}
+              color="amber"
+              onClick={() => handleCardClick('clusters')}
+              isActive={activeTab === 'roadmap'}
+              actionHint="Roadmapga o'tish →"
+            />
+            <MetricCard
+              title="Ijobiy Fikrlar"
+              value={summary.positive_feedbacks}
+              subtitle="Mijozlar maqtovlari"
+              icon={<Smile className="w-5 h-5" />}
+              color="emerald"
+              onClick={() => handleCardClick('positive')}
+              isActive={activeTab === 'feedbacks' && feedbackFilter === 'positive'}
+              actionHint="Ijobiylarni ko'rish →"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex border-b border-slate-200 gap-6">
         <button
@@ -198,7 +286,10 @@ export const ProjectDetailsPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('feedbacks')}
+          onClick={() => {
+            setActiveTab('feedbacks');
+            setFeedbackFilter('all');
+          }}
           className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-all ${
             activeTab === 'feedbacks'
               ? 'border-emerald-600 text-emerald-700'
@@ -224,38 +315,7 @@ export const ProjectDetailsPage: React.FC = () => {
 
       {/* Tab Contents */}
       {activeTab === 'roadmap' && (
-        <div className="space-y-6">
-          {summary && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard
-                title="Jami Sharhlar"
-                value={summary.total_feedbacks}
-                icon={<MessageSquare className="w-5 h-5" />}
-                color="blue"
-              />
-              <MetricCard
-                title="Salbiy Fikrlar"
-                value={summary.negative_feedbacks}
-                subtitle="Klasterlashga yo'naltirilgan"
-                icon={<Frown className="w-5 h-5" />}
-                color="rose"
-              />
-              <MetricCard
-                title="Aniqlangan Muammolar"
-                value={summary.clusters.length}
-                subtitle="Groq Llama 3 tahlili"
-                icon={<Flame className="w-5 h-5" />}
-                color="amber"
-              />
-              <MetricCard
-                title="Ijobiy Fikrlar"
-                value={summary.positive_feedbacks}
-                icon={<Smile className="w-5 h-5" />}
-                color="emerald"
-              />
-            </div>
-          )}
-
+        <div className="space-y-6" id="clusters-section">
           {summary && summary.total_feedbacks > 0 && (
             <SentimentBar
               positive={summary.positive_feedbacks}
@@ -265,30 +325,96 @@ export const ProjectDetailsPage: React.FC = () => {
           )}
 
           <div>
-            <div className="mb-4">
-              <h2 className="text-base font-bold text-slate-900">Eng Muhim Muammolar Klasteri (Roadmap Priority)</h2>
-              <p className="text-xs text-slate-500">
-                Foydalanuvchilar e'tirozlari bo'yicha guruhlangan va Jira/Linear topshiriqlari tayyorlangan.
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Eng Muhim Muammolar Klasteri (Roadmap Priority)
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Foydalanuvchilar e'tirozlari bo'yicha guruhlangan va Jira/Linear topshiriqlari tayyorlangan.
+                </p>
+              </div>
+
+              {/* Cluster Filter Buttons */}
+              {summary && summary.clusters.length > 0 && (
+                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+                  {(
+                    [
+                      { id: 'all', label: `Barchasi (${summary.clusters.length})` },
+                      {
+                        id: 'open',
+                        label: `Ochiq (${summary.clusters.filter((c) => !c.is_resolved).length})`,
+                      },
+                      {
+                        id: 'resolved',
+                        label: `Hal qilingan (${summary.clusters.filter((c) => c.is_resolved).length})`,
+                      },
+                      {
+                        id: 'critical',
+                        label: `Kritik (${summary.clusters.filter((c) => c.severity === 'critical').length})`,
+                      },
+                    ] as const
+                  ).map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => setClusterFilter(f.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                        clusterFilter === f.id
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {summary && summary.clusters.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
-                {summary.clusters.map((cluster, idx) => (
-                  <ClusterCard key={cluster.id} cluster={cluster} rank={idx + 1} />
-                ))}
+                {filteredClusters.length > 0 ? (
+                  filteredClusters.map((cluster, idx) => (
+                    <ClusterCard
+                      key={cluster.id}
+                      cluster={cluster}
+                      rank={idx + 1}
+                      onToggleResolve={handleToggleResolve}
+                    />
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-slate-400 bg-white border border-slate-200 rounded-xl text-xs">
+                    Tanlangan filtr bo'yicha muammolar topilmadi.
+                  </div>
+                )}
               </div>
             ) : (
               <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
                 <Sparkles className="w-10 h-10 text-amber-500 mx-auto mb-3" />
                 <h3 className="text-sm font-bold text-slate-900">Tahlil natijalari hali shakllanmagan</h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
-                  Avval CSV formatida foydalanuvchilar fikr-mulohazalarini yuklang.
+                  Avval CSV formatida foydalanuvchilar fikr-mulohazalarini yuklang yoki App Store'dan torting.
                 </p>
-                <Button size="sm" variant="primary" onClick={() => setActiveTab('upload')} className="gap-2 text-xs">
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>CSV Yuklash</span>
-                </Button>
+                <div className="flex justify-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsAppStoreOpen(true)}
+                    className="gap-2 text-xs"
+                  >
+                    <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>App Store</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => setActiveTab('upload')}
+                    className="gap-2 text-xs"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>CSV Yuklash</span>
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -296,7 +422,12 @@ export const ProjectDetailsPage: React.FC = () => {
       )}
 
       {activeTab === 'feedbacks' && (
-        <FeedbackList feedbacks={feedbacks} isLoading={false} />
+        <FeedbackList
+          feedbacks={feedbacks}
+          isLoading={false}
+          initialFilter={feedbackFilter}
+          onFilterChange={setFeedbackFilter}
+        />
       )}
 
       {activeTab === 'upload' && (

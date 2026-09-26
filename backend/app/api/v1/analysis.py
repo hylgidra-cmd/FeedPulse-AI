@@ -198,3 +198,51 @@ def get_analysis_clusters(
         neutral_feedbacks=neutral_feedbacks,
         clusters=cluster_responses
     )
+
+@router.patch("/{project_id}/clusters/{cluster_id}/toggle-resolve", response_model=IssueClusterResponse)
+def toggle_cluster_resolved(
+    project_id: uuid.UUID,
+    cluster_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    project = db.query(Project).filter(Project.id == project_id, Project.user_id == current_user.id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    cluster = db.query(IssueCluster).filter(IssueCluster.id == cluster_id, IssueCluster.project_id == project_id).first()
+    if not cluster:
+        raise HTTPException(status_code=404, detail="Cluster not found")
+
+    cluster.is_resolved = not cluster.is_resolved
+    db.commit()
+    db.refresh(cluster)
+
+    sample_feedbacks = [
+        FeedbackResponse(
+            id=fb.id,
+            project_id=fb.project_id,
+            content=fb.content,
+            rating=fb.rating,
+            sentiment=fb.sentiment,
+            author_name=fb.author_name,
+            source=fb.source,
+            created_at=fb.created_at
+        )
+        for fb in cluster.feedbacks[:5]
+    ]
+
+    return IssueClusterResponse(
+        id=cluster.id,
+        project_id=cluster.project_id,
+        title=cluster.title,
+        root_cause=cluster.root_cause,
+        severity=cluster.severity,
+        impact_percentage=cluster.impact_percentage,
+        jira_markdown=cluster.jira_markdown,
+        is_resolved=cluster.is_resolved,
+        created_at=cluster.created_at,
+        feedback_count=len(cluster.feedbacks),
+        sample_feedbacks=sample_feedbacks
+    )
+
