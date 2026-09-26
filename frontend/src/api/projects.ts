@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { Project, UploadStats, Feedback, WebsiteInspectResponse } from '../types';
+import { Project, UploadStats, Feedback } from '../types';
 
 export const projectsApi = {
   getAll: async (): Promise<Project[]> => {
@@ -12,28 +12,8 @@ export const projectsApi = {
     return res.data;
   },
 
-  create: async (
-    name: string,
-    description?: string,
-    platform?: string,
-    website_url?: string
-  ): Promise<Project> => {
-    const res = await apiClient.post<Project>('/projects', {
-      name,
-      description,
-      platform,
-      website_url,
-    });
-    return res.data;
-  },
-
-  inspectWebsite: async (url: string): Promise<WebsiteInspectResponse> => {
-    const res = await apiClient.post<WebsiteInspectResponse>('/projects/inspect-website', { url });
-    return res.data;
-  },
-
-  seedDemo: async (): Promise<Project> => {
-    const res = await apiClient.post<Project>('/projects/seed-demo');
+  create: async (name: string, description?: string, platform?: string): Promise<Project> => {
+    const res = await apiClient.post<Project>('/projects', { name, description, platform });
     return res.data;
   },
 
@@ -54,28 +34,10 @@ export const projectsApi = {
     return res.data;
   },
 
-  scrapeAppStore: async (
-    projectId: string,
-    appId: string,
-    country: string = 'us',
-    appName?: string,
-    replaceExisting: boolean = true
-  ): Promise<UploadStats> => {
+  scrapeAppStore: async (projectId: string, appId: string, country: string = 'us'): Promise<UploadStats> => {
     const res = await apiClient.post<UploadStats>(
       `/projects/${projectId}/feedbacks/scrape-app-store`,
-      {
-        app_id: appId,
-        country,
-        app_name: appName,
-        replace_existing: replaceExisting,
-      }
-    );
-    return res.data;
-  },
-
-  clearFeedbacks: async (projectId: string): Promise<{ message: string; deleted_count: number }> => {
-    const res = await apiClient.delete<{ message: string; deleted_count: number }>(
-      `/projects/${projectId}/feedbacks/clear`
+      { app_id: appId, country }
     );
     return res.data;
   },

@@ -1,22 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-  FolderKanban,
-  Plus,
-  MessageSquare,
-  Flame,
-  ArrowRight,
-  Smartphone,
-  Globe,
-  Sparkles,
-  Search,
-  CheckCircle2,
-  AlertTriangle,
-  Key,
-  BookOpen,
-} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { FolderKanban, Plus, MessageSquare, Flame, ArrowRight, Smartphone, Globe } from 'lucide-react';
 import { projectsApi } from '../api/projects';
-import { Project, WebsiteInspectResponse } from '../types';
+import { Project } from '../types';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 
@@ -27,15 +13,7 @@ export const DashboardPage: React.FC = () => {
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
   const [newProjectPlatform, setNewProjectPlatform] = useState('general');
-  const [websiteUrl, setWebsiteUrl] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-
-  // Live Website Inspector State
-  const [isInspecting, setIsInspecting] = useState(false);
-  const [inspectResult, setInspectResult] = useState<WebsiteInspectResponse | null>(null);
-  const [inspectError, setInspectError] = useState<string | null>(null);
-
-  const navigate = useNavigate();
 
   const fetchProjects = async () => {
     try {
@@ -52,55 +30,16 @@ export const DashboardPage: React.FC = () => {
     fetchProjects();
   }, []);
 
-  const handleInspectUrl = async () => {
-    if (!websiteUrl.trim()) {
-      setInspectError('Iltimos, avval veb-sayt manzilini (URL) kiriting.');
-      return;
-    }
-
-    setIsInspecting(true);
-    setInspectError(null);
-    setInspectResult(null);
-
-    try {
-      const result = await projectsApi.inspectWebsite(websiteUrl.trim());
-      setInspectResult(result);
-
-      // Auto-fill project title and description if empty
-      if (!newProjectName && result.site_title) {
-        setNewProjectName(result.site_title);
-      }
-      if (!newProjectDesc && result.detected_courses && result.detected_courses.length > 0) {
-        setNewProjectDesc(
-          `Ta'lim platformasi. Aniqlangan kurslar: ${result.detected_courses.join(', ')}`
-        );
-      } else if (!newProjectDesc && result.site_description) {
-        setNewProjectDesc(result.site_description);
-      }
-    } catch (err: any) {
-      setInspectError(err?.response?.data?.detail || 'Saytni tekshirishda xatolik yuz berdi.');
-    } finally {
-      setIsInspecting(false);
-    }
-  };
-
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjectName.trim()) return;
     setIsCreating(true);
     try {
-      const created = await projectsApi.create(
-        newProjectName,
-        newProjectDesc,
-        newProjectPlatform,
-        websiteUrl.trim() || undefined
-      );
+      await projectsApi.create(newProjectName, newProjectDesc, newProjectPlatform);
       setNewProjectName('');
       setNewProjectDesc('');
-      setWebsiteUrl('');
-      setInspectResult(null);
       setIsModalOpen(false);
-      navigate(`/projects/${created.id}`);
+      await fetchProjects();
     } catch (err) {
       console.error('Failed to create project', err);
     } finally {
@@ -108,72 +47,43 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleSeedDataLife = async () => {
-    setIsLoading(true);
-    try {
-      const proj = await projectsApi.seedDemo();
-      navigate(`/projects/${proj.id}`);
-    } catch (err) {
-      console.error('Failed to seed demo project', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-8 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-sm border border-slate-700/50">
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-8 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-sm">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              VoC to Roadmap AI
-            </span>
-          </div>
           <h2 className="text-2xl font-bold tracking-tight">Mahsulot Loyihalari</h2>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
-            Mijozlar sharhlari (Veb-saytlar, App Store, Play Store, CSV) tahlili va mahsulot roadmapi uchun Jira topshiriqlari.
+          <p className="text-slate-400 text-sm mt-1 max-w-xl">
+            Mijozlar sharhlari (App Store, Play Store, CSV) tahlili va mahsulot roadmapi uchun Jira tasklar.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/20"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Yangi Loyiha</span>
-          </Button>
-        </div>
+        <Button
+          onClick={() => setIsModalOpen(true)}
+          className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Yangi Loyiha</span>
+        </Button>
       </div>
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-44 bg-slate-200 animate-pulse rounded-2xl"></div>
+            <div key={i} className="h-44 bg-slate-200 animate-pulse rounded-xl"></div>
           ))}
         </div>
       ) : projects.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-10 text-center shadow-xs">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4 border border-emerald-100">
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+          <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
             <FolderKanban className="w-8 h-8" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900 mb-1">Loyihalar mavjud emas</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto mb-6">
-            Birinchi mahsulotingizni qo'shing yoki tayyor <strong>DATA LIFE IT Academy</strong> namunaviy loyihasini 1-bosishda oching.
+          <h3 className="text-lg font-bold text-slate-800 mb-1">Loyihalar mavjud emas</h3>
+          <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
+            Birinchi mahsulotingizni qo'shing va mijozlar sharhlarini tahlil qilishni boshlang.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Button
-              onClick={handleSeedDataLife}
-              variant="outline"
-              className="gap-2 text-xs border-emerald-300 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100"
-            >
-              <Sparkles className="w-4 h-4 text-emerald-600" />
-              <span>⚡ DATA LIFE (Tezkor Namuna)</span>
-            </Button>
-            <Button onClick={() => setIsModalOpen(true)} className="gap-2 text-xs">
-              <Plus className="w-4 h-4" />
-              <span>Birinchi loyihani yaratish</span>
-            </Button>
-          </div>
+          <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            <span>Birinchi loyihani yaratish</span>
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -181,33 +91,28 @@ export const DashboardPage: React.FC = () => {
             <Link
               key={proj.id}
               to={`/projects/${proj.id}`}
-              className="group bg-white rounded-2xl border border-slate-200 hover:border-emerald-500/50 p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+              className="group bg-white rounded-xl border border-slate-200 hover:border-emerald-500/50 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase tracking-wider flex items-center gap-1">
                     {proj.platform === 'ios' ? (
-                      <>
-                        <Smartphone className="w-3 h-3 text-slate-500" /> iOS App
-                      </>
+                      <Smartphone className="w-3 h-3 text-slate-500" />
                     ) : (
-                      <>
-                        <Globe className="w-3 h-3 text-emerald-600" /> B2B SaaS / Web
-                      </>
+                      <Globe className="w-3 h-3 text-slate-500" />
                     )}
+                    {proj.platform || 'General'}
                   </span>
-                  {proj.website_url && (
-                    <span className="text-[10px] text-slate-400 font-mono truncate max-w-[130px]">
-                      {proj.website_url.replace(/^https?:\/\//, '')}
-                    </span>
-                  )}
+                  <span className="text-xs text-slate-400">
+                    {new Date(proj.created_at).toLocaleDateString()}
+                  </span>
                 </div>
 
-                <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-1 mb-1.5">
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition-colors mb-2">
                   {proj.name}
                 </h3>
                 <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
-                  {proj.description || 'Tavsif berilmagan'}
+                  {proj.description || 'Loyiha tavsifi kiritilmagan.'}
                 </p>
               </div>
 
@@ -215,13 +120,11 @@ export const DashboardPage: React.FC = () => {
                 <div className="flex items-center gap-4 text-xs text-slate-600">
                   <div className="flex items-center gap-1">
                     <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="font-semibold">{proj.feedbacks_count}</span>{' '}
-                    <span className="text-[11px] text-slate-400">sharh</span>
+                    <span>{proj.feedbacks_count} sharh</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Flame className="w-3.5 h-3.5 text-rose-500" />
-                    <span className="font-semibold">{proj.clusters_count}</span>{' '}
-                    <span className="text-[11px] text-slate-400">muammo</span>
+                    <span>{proj.clusters_count} muammo</span>
                   </div>
                 </div>
 
@@ -234,136 +137,12 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* New Project Modal with Website Inspector & API Key */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Yangi Mahsulot Loyihasi & Veb-sayt Ulanish"
+        title="Yangi Mahsulot Loyihasi"
       >
         <form onSubmit={handleCreateProject} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Platforma turi
-            </label>
-            <select
-              value={newProjectPlatform}
-              onChange={(e) => setNewProjectPlatform(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-            >
-              <option value="general">B2B SaaS / Veb-sayt / Kurs sayti</option>
-              <option value="ios">iOS App Store</option>
-              <option value="android">Google Play Store</option>
-              <option value="discord">Discord / Community</option>
-            </select>
-          </div>
-
-          {/* Website URL Input & Live Inspector */}
-          {newProjectPlatform === 'general' && (
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-3">
-              <label className="block text-xs font-bold text-slate-800">
-                Veb-sayt URL manzili (O'qitish yoki SaaS sayti):
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  placeholder="https://datalife.uz"
-                  value={websiteUrl}
-                  onChange={(e) => setWebsiteUrl(e.target.value)}
-                  className="flex-1 px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleInspectUrl}
-                  isLoading={isInspecting}
-                  className="gap-1.5 text-xs flex-shrink-0"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                  <span>Saytni Tekshirish</span>
-                </Button>
-              </div>
-
-              {inspectError && (
-                <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                  <span>{inspectError}</span>
-                </div>
-              )}
-
-              {/* Inspector Result Box */}
-              {inspectResult && (
-                <div className="p-3.5 rounded-xl bg-white border border-slate-200 text-xs space-y-2.5 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                      <Globe className="w-4 h-4 text-emerald-600" />
-                      {inspectResult.site_title}
-                    </span>
-                    {inspectResult.is_educational && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 flex items-center gap-1">
-                        <BookOpen className="w-3 h-3" /> Ta'lim sayti
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Detected Courses/Videos */}
-                  {inspectResult.detected_courses && inspectResult.detected_courses.length > 0 && (
-                    <div>
-                      <p className="text-[11px] font-bold text-slate-700 mb-1">
-                        Aniqlangan kurslar va yo'nalishlar ({inspectResult.detected_courses.length} ta):
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {inspectResult.detected_courses.map((course, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium"
-                          >
-                            ✓ {course}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Diagnostic Alert Box */}
-                  <div
-                    className={`p-3 rounded-xl border text-xs leading-relaxed ${
-                      inspectResult.has_reviews
-                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                        : 'bg-amber-50 border-amber-200 text-amber-900'
-                    }`}
-                  >
-                    <div className="flex items-start gap-2">
-                      {inspectResult.has_reviews ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                      ) : (
-                        <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                      )}
-                      <div>
-                        <p className="font-bold mb-0.5">
-                          {inspectResult.has_reviews
-                            ? 'Sharhlar aniqlandi!'
-                            : "Saytda ochiq sharhlar va izohlar (reviews) topilmadi"}
-                        </p>
-                        <p className="text-[11px]">{inspectResult.diagnostic_message}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Generated API Key Preview */}
-                  <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200/80 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 flex items-center gap-1">
-                      <Key className="w-3.5 h-3.5 text-slate-400" />
-                      Loyihaga avtomatik API Key beriladi
-                    </span>
-                    <span className="font-mono text-emerald-700 font-bold">
-                      fp_live_... (Avtomatik ulanadi)
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
               Loyiha Nomi *
@@ -371,39 +150,52 @@ export const DashboardPage: React.FC = () => {
             <input
               type="text"
               required
-              placeholder="Masalan: DATA LIFE IT Academy"
+              placeholder="Masalan: Fintech Mobile App"
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Tavsif (Description)
+              Platforma turi
+            </label>
+            <select
+              value={newProjectPlatform}
+              onChange={(e) => setNewProjectPlatform(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="general">B2B SaaS / Web</option>
+              <option value="ios">iOS App Store</option>
+              <option value="android">Google Play Store</option>
+              <option value="discord">Discord / Community</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              Tavsif
             </label>
             <textarea
-              rows={2}
-              placeholder="Ushbu mahsulot yoki kurs haqida qisqacha ma'lumot..."
+              rows={3}
+              placeholder="Ushbu mahsulot haqida qisqacha ma'lumot..."
               value={newProjectDesc}
               onChange={(e) => setNewProjectDesc(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <div className="flex justify-end gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => setIsModalOpen(false)}
-              className="text-xs"
             >
               Bekor qilish
             </Button>
-            <Button type="submit" size="sm" isLoading={isCreating} className="text-xs gap-1.5">
-              <Plus className="w-3.5 h-3.5" />
-              <span>Loyihani yaratish</span>
+            <Button type="submit" isLoading={isCreating}>
+              Loyihani yaratish
             </Button>
           </div>
         </form>

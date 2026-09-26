@@ -17,8 +17,6 @@ export interface Project {
   name: string;
   description?: string;
   platform?: string;
-  website_url?: string;
-  api_key?: string;
   created_at: string;
   feedbacks_count: number;
   clusters_count: number;
@@ -64,17 +62,3 @@ export interface UploadStats {
   ignored_short: number;
   message: string;
 }
-
-export interface WebsiteInspectResponse {
-  success: boolean;
-  url: string;
-  site_title: string;
-  site_description: string;
-  is_educational: boolean;
-  detected_courses: string[];
-  reviews_found: any[];
-  has_reviews: boolean;
-  diagnostic_message: string;
-  error?: string;
-}
-

@@ -12,8 +12,6 @@ class Project(Base):
     name = Column(String(150), nullable=False)
     description = Column(Text, nullable=True)
     platform = Column(String(50), default="general")
-    website_url = Column(String(255), nullable=True)
-    api_key = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     owner = relationship("User", back_populates="projects")

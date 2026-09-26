@@ -37,20 +37,6 @@ def startup_db_init():
     except Exception as e:
         print(f"[Database Error] Error initializing tables: {e}")
 
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("ALTER TABLE projects ADD COLUMN website_url VARCHAR(255);"))
-            conn.commit()
-    except Exception:
-        pass
-
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("ALTER TABLE projects ADD COLUMN api_key VARCHAR(100);"))
-            conn.commit()
-    except Exception:
-        pass
-
 @app.get("/")
 def root():
     return {
