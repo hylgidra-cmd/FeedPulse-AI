@@ -11,9 +11,4 @@ export const analysisApi = {
     const res = await apiClient.get<ProjectAnalysisSummary>(`/projects/${projectId}/analysis/clusters`);
     return res.data;
   },
-
-  toggleClusterResolved: async (projectId: string, clusterId: string): Promise<IssueCluster> => {
-    const res = await apiClient.patch<IssueCluster>(`/projects/${projectId}/clusters/${clusterId}/toggle-resolve`);
-    return res.data;
-  },
 };
