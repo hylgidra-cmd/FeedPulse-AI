@@ -56,4 +56,3 @@ async def fetch_app_store_reviews(app_id: str, country: str = "us") -> Tuple[Lis
             "source": "app_store"
         })
     return valid_items, total_parsed, ignored_short
-
