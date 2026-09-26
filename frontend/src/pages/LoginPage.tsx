@@ -31,6 +31,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     }
   };
 
+  const handleDemoLogin = async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const data = await authApi.demoLogin();
+      onLoginSuccess(data.user, data.access_token);
+      navigate('/');
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || 'Demo hisobiga kirishda xatolik yuz berdi.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200/80 p-8">
@@ -49,6 +63,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </div>
         )}
 
+        {/* 1-Click Demo Login Button at the top */}
+        <button
+          type="button"
+          onClick={handleDemoLogin}
+          disabled={isLoading}
+          className="w-full mb-6 p-3 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-300 text-emerald-800 hover:from-emerald-100 hover:to-teal-100 transition-all flex items-center justify-center gap-2 font-bold text-xs shadow-sm"
+        >
+          <Sparkles className="w-4 h-4 text-emerald-600" />
+          <span>⚡ 1-Click Bilan Tizimga Kirish (Tezkor Demo)</span>
+        </button>
+
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-slate-400">Yoki email bilan kiring</span>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -61,7 +95,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="pm@company.com"
+                placeholder="namuna@kompaniya.uz"
                 className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>

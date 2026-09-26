@@ -1,12 +1,12 @@
 import httpx
 from typing import List, Dict, Any, Tuple
 
-async def _fetch_single_store(app_id: str, country: str) -> Tuple[List[Dict[str, Any]], int, int]:
+async def fetch_app_store_reviews(app_id: str, country: str = "us") -> Tuple[List[Dict[str, Any]], int, int]:
     url = f"https://itunes.apple.com/{country}/rss/customerreviews/id={app_id}/sortBy=mostRecent/json"
     async with httpx.AsyncClient(timeout=15.0) as client:
         response = await client.get(url)
         if response.status_code != 200:
-            return [], 0, 0
+            raise ValueError(f"Failed to fetch App Store reviews. Status code: {response.status_code}")
         data = response.json()
 
     feed = data.get("feed", {})
@@ -38,13 +38,6 @@ async def _fetch_single_store(app_id: str, country: str) -> Tuple[List[Dict[str,
             "rating": rating,
             "sentiment": sentiment,
             "author_name": author_name,
-            "source": f"app_store_{country}"
+            "source": "app_store"
         })
     return valid_items, total_parsed, ignored_short
-
-async def fetch_app_store_reviews(app_id: str, country: str = "us") -> Tuple[List[Dict[str, Any]], int, int]:
-    items, total, ignored = await _fetch_single_store(app_id, country)
-    # If regional store has 0 reviews, fall back to global US store
-    if not items and country != "us":
-        items, total, ignored = await _fetch_single_store(app_id, "us")
-    return items, total, ignored
