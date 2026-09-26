@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { Download, AlertCircle, CheckCircle2, Sparkles, RefreshCw } from 'lucide-react';
+import { Download, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { projectsApi } from '../../api/projects';
 import { UploadStats } from '../../types';
 
@@ -39,7 +39,6 @@ export const AppStoreModal: React.FC<AppStoreModalProps> = ({
   const [appId, setAppId] = useState('');
   const [selectedAppName, setSelectedAppName] = useState('');
   const [country, setCountry] = useState('us');
-  const [replaceExisting, setReplaceExisting] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,14 +57,7 @@ export const AppStoreModal: React.FC<AppStoreModalProps> = ({
     setIsLoading(true);
     setError(null);
     try {
-      const cleanAppName = selectedAppName ? selectedAppName.replace(/^[^\s]+\s+/, '') : undefined;
-      const stats = await projectsApi.scrapeAppStore(
-        projectId,
-        appId.trim(),
-        country,
-        cleanAppName,
-        replaceExisting
-      );
+      const stats = await projectsApi.scrapeAppStore(projectId, appId.trim(), country);
       onSuccess(stats);
       onClose();
     } catch (err: any) {
@@ -113,27 +105,6 @@ export const AppStoreModal: React.FC<AppStoreModalProps> = ({
               );
             })}
           </div>
-        </div>
-
-        {/* Isolation Setting: Prevent mixing reviews */}
-        <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5">
-          <input
-            id="replace_existing_box"
-            type="checkbox"
-            checked={replaceExisting}
-            onChange={(e) => setReplaceExisting(e.target.checked)}
-            className="mt-0.5 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
-          />
-          <label htmlFor="replace_existing_box" className="text-xs cursor-pointer select-none">
-            <span className="font-bold text-slate-800 block">
-              Toza tahlil boshlash (Eski sharhlarni o'chirib, faqat tanlangan ilovani olish)
-            </span>
-            <span className="text-slate-500 text-[11px] block mt-0.5">
-              {replaceExisting
-                ? "✓ Ilovalar bir-biri bilan aralashib ketmaydi. Faqat hozir tanlangan ilovaning sharhlari va tahlili saqlanadi."
-                : "⚠️ Yangi sharhlar hozirgi sharhlar ro'yxatiga qo'shiladi (Aralash tahlil)."}
-            </span>
-          </label>
         </div>
 
         {error && (

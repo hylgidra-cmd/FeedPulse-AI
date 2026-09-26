@@ -13,6 +13,8 @@ import {
   Globe,
   FileDown,
   Trash2,
+  Key,
+  ExternalLink,
 } from 'lucide-react';
 import { projectsApi } from '../api/projects';
 import { analysisApi } from '../api/analysis';
@@ -25,6 +27,7 @@ import { FeedbackList } from '../components/dashboard/FeedbackList';
 import { CsvDropzone } from '../components/upload/CsvDropzone';
 import { AppStoreModal } from '../components/upload/AppStoreModal';
 import { ExportReportModal } from '../components/dashboard/ExportReportModal';
+import { ApiModal } from '../components/dashboard/ApiModal';
 
 export const ProjectDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +45,7 @@ export const ProjectDetailsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isAppStoreOpen, setIsAppStoreOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isApiModalOpen, setIsApiModalOpen] = useState(false);
 
   const loadData = async () => {
     if (!id) return;
@@ -179,11 +183,36 @@ export const ProjectDetailsPage: React.FC = () => {
               <span>Barcha loyihalar</span>
             </Link>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{project.name}</h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{project.name}</h1>
+            {project.website_url && (
+              <a
+                href={project.website_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+              >
+                <Globe className="w-3 h-3 text-emerald-600" />
+                <span>{project.website_url.replace(/^https?:\/\//, '')}</span>
+                <ExternalLink className="w-2.5 h-2.5 text-emerald-500" />
+              </a>
+            )}
+          </div>
           <p className="text-xs text-slate-500 mt-1">{project.description || 'Tavsif yo\'q'}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsApiModalOpen(true)}
+            className="gap-1.5 text-xs text-slate-700 hover:text-emerald-700 border-slate-200"
+            title="Loyiha API Kaliti va Webhook integratsiyasi"
+          >
+            <Key className="w-3.5 h-3.5 text-amber-500" />
+            <span>API & Webhook</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -515,6 +544,15 @@ export const ProjectDetailsPage: React.FC = () => {
         summary={summary}
         feedbacks={feedbacks}
       />
+
+      {/* API & Webhook Modal */}
+      {project && (
+        <ApiModal
+          isOpen={isApiModalOpen}
+          onClose={() => setIsApiModalOpen(false)}
+          project={project}
+        />
+      )}
     </div>
   );
 };
